@@ -2,9 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog, Menu
 from database import df, RenovationLogic, DELIVERY_FLAT_RATE, INSTALLATION_FLAT_RATE
 from PIL import Image, ImageTk, ImageDraw
-import os
 from datetime import datetime
-
+# Removed import os (Dead Code)
 
 class RenovationApp(tk.Tk):
     def __init__(self):
@@ -51,13 +50,23 @@ class RenovationApp(tk.Tk):
         self.show_frame("HomePage")
         self.apply_theme()
 
+    # --- HELPER: Centers any popup window ---
+    def center_popup(self, popup, width, height):
+        self.update_idletasks()
+        main_x = self.winfo_x()
+        main_y = self.winfo_y()
+        main_w = self.winfo_width()
+        main_h = self.winfo_height()
+        x = main_x + (main_w // 2) - (width // 2)
+        y = main_y + (main_h // 2) - (height // 2)
+        popup.geometry(f"{width}x{height}+{x}+{y}")
+
     def create_menu(self):
         my_menu = Menu(self)
         self.config(menu=my_menu)
 
         file_menu = Menu(my_menu, tearoff=0)
         my_menu.add_cascade(label="File", menu=file_menu)
-        # UPDATED: Removed "Save Receipt" from here as requested
         file_menu.add_command(label="Exit", command=self.quit)
 
         view_menu = Menu(my_menu, tearoff=0)
@@ -104,6 +113,15 @@ class HomePage(tk.Frame):
         self.center_box = tk.Frame(self)
         self.center_box.place(relx=0.5, rely=0.5, anchor="center")
 
+        self.logo_img = None
+        try:
+            load = Image.open("images/logo.png")
+            load = load.resize((150, 150), Image.Resampling.LANCZOS)
+            self.logo_img = ImageTk.PhotoImage(load)
+            tk.Label(self.center_box, image=self.logo_img).pack(pady=10)
+        except Exception:
+            tk.Label(self.center_box, text="[LOGO]", font=("Arial", 20, "bold")).pack(pady=10)
+
         self.title_lbl = tk.Label(self.center_box, text="RENOVISION", font=("Arial", 36, "bold"))
         self.title_lbl.pack(pady=5)
 
@@ -128,6 +146,18 @@ class DashboardPage(tk.Frame):
         super().__init__(parent)
         self.controller = controller
 
+        self.top_bar = tk.Frame(self)
+        self.top_bar.pack(fill="x", side="top", padx=10, pady=10)
+
+        self.logo_img = None
+        try:
+            load = Image.open("images/logo.png")
+            load = load.resize((50, 50), Image.Resampling.LANCZOS)
+            self.logo_img = ImageTk.PhotoImage(load)
+            tk.Label(self.top_bar, image=self.logo_img).pack(side="left")
+        except:
+            pass
+
         self.center_box = tk.Frame(self)
         self.center_box.place(relx=0.5, rely=0.5, anchor="center")
         self.labels = []
@@ -151,6 +181,7 @@ class DashboardPage(tk.Frame):
     def update_colors(self, c):
         self.config(bg=c["bg"])
         self.center_box.config(bg=c["bg"])
+        self.top_bar.config(bg=c["bg"])
         for lbl in self.labels:
             lbl.config(bg=c["bg"], fg=c["fg"])
 
@@ -164,6 +195,14 @@ class MaterialPage(tk.Frame):
         self.header_frame = tk.Frame(self)
         self.header_frame.pack(fill="x", padx=20, pady=20)
 
+        self.logo_img = None
+        try:
+            load = Image.open("images/logo.png")
+            load = load.resize((50, 50), Image.Resampling.LANCZOS)
+            self.logo_img = ImageTk.PhotoImage(load)
+            tk.Label(self.header_frame, image=self.logo_img).pack(side="left", padx=(0, 10))
+        except: pass
+
         self.title_lbl = tk.Label(self.header_frame, text="Material Catalog", font=("Arial", 20, "bold"))
         self.title_lbl.pack(side="left")
 
@@ -171,32 +210,65 @@ class MaterialPage(tk.Frame):
                   command=lambda: controller.show_frame("DashboardPage")).pack(side="right")
 
         self.content_frame = tk.Frame(self)
-        self.content_frame.pack(fill="both", expand=True, padx=40, pady=20)
+        self.content_frame.pack(fill="both", expand=True, padx=40, pady=10)
 
-        tk.Label(self.content_frame, text="Select a material to view details:", font=("Arial", 12)).pack(anchor="w")
+        # LEFT COLUMN
+        self.floor_frame = tk.Frame(self.content_frame)
+        self.floor_frame.pack(side="left", fill="both", expand=True, padx=10)
 
-        self.material_list = tk.Listbox(self.content_frame, font=("Arial", 14), height=15)
-        self.material_list.pack(side="left", fill="both", expand=True, padx=(0, 20))
+        self.lbl_floor = tk.Label(self.floor_frame, text="Flooring Options", font=("Arial", 14, "bold"))
+        self.lbl_floor.pack(anchor="w", pady=5)
 
-        scrollbar = tk.Scrollbar(self.content_frame)
-        scrollbar.pack(side="left", fill="y")
-        self.material_list.config(yscrollcommand=scrollbar.set)
-        scrollbar.config(command=self.material_list.yview)
+        self.floor_list = tk.Listbox(self.floor_frame, font=("Arial", 12), height=15, exportselection=False)
+        self.floor_list.pack(side="left", fill="both", expand=True)
 
-        tk.Button(self.content_frame, text="VIEW SPEC & IMAGE ➤",
+        floor_scroll = tk.Scrollbar(self.floor_frame, command=self.floor_list.yview)
+        floor_scroll.pack(side="left", fill="y")
+        self.floor_list.config(yscrollcommand=floor_scroll.set)
+
+        # RIGHT COLUMN
+        self.wall_frame = tk.Frame(self.content_frame)
+        self.wall_frame.pack(side="right", fill="both", expand=True, padx=10)
+
+        self.lbl_wall = tk.Label(self.wall_frame, text="Wall Finishes", font=("Arial", 14, "bold"))
+        self.lbl_wall.pack(anchor="w", pady=5)
+
+        self.wall_list = tk.Listbox(self.wall_frame, font=("Arial", 12), height=15, exportselection=False)
+        self.wall_list.pack(side="left", fill="both", expand=True)
+
+        wall_scroll = tk.Scrollbar(self.wall_frame, command=self.wall_list.yview)
+        wall_scroll.pack(side="left", fill="y")
+        self.wall_list.config(yscrollcommand=wall_scroll.set)
+
+        self.floor_list.bind("<<ListboxSelect>>", lambda e: self.wall_list.selection_clear(0, "end"))
+        self.wall_list.bind("<<ListboxSelect>>", lambda e: self.floor_list.selection_clear(0, "end"))
+
+        self.btn_frame = tk.Frame(self)
+        self.btn_frame.pack(fill="x", pady=20)
+        tk.Button(self.btn_frame, text="VIEW SPEC & IMAGE ➤",
                   font=("Arial", 12, "bold"), bg="#4CAF50", fg="white", height=2,
-                  command=self.open_popup).pack(side="right", anchor="n")
+                  command=self.open_popup).pack()
 
         self.load_list()
 
     def load_list(self):
-        for material in df['Material']:
-            self.material_list.insert("end", material)
+        self.floor_list.delete(0, "end")
+        self.wall_list.delete(0, "end")
+
+        for index, row in df.iterrows():
+            if row['Type'] == 'Floor':
+                self.floor_list.insert("end", row['Material'])
+            elif row['Type'] == 'Wall':
+                self.wall_list.insert("end", row['Material'])
 
     def open_popup(self):
-        try:
-            selection = self.material_list.get(self.material_list.curselection())
-        except tk.TclError:
+        selection = None
+        if self.floor_list.curselection():
+            selection = self.floor_list.get(self.floor_list.curselection())
+        elif self.wall_list.curselection():
+            selection = self.wall_list.get(self.wall_list.curselection())
+
+        if not selection:
             messagebox.showwarning("Selection", "Please select a material first.")
             return
 
@@ -204,7 +276,7 @@ class MaterialPage(tk.Frame):
 
         popup = tk.Toplevel(self)
         popup.title(f"{selection} - Details")
-        popup.geometry("500x450")
+        self.controller.center_popup(popup, 500, 450)
 
         c = self.controller.colors[self.controller.current_mode]
         popup.config(bg=c["bg"])
@@ -214,16 +286,13 @@ class MaterialPage(tk.Frame):
         img_frame.pack_propagate(False)
 
         image_name = row['Image_File']
-
         try:
             load = Image.open(image_name)
             load = load.resize((400, 200), Image.Resampling.LANCZOS)
             render = ImageTk.PhotoImage(load)
-
             img_label = tk.Label(img_frame, image=render, bg="grey")
             img_label.image = render
             img_label.pack(fill="both", expand=True)
-
         except FileNotFoundError:
             lbl = tk.Label(img_frame, text=f"Image not found:\n{image_name}", bg="lightgrey", fg="red")
             lbl.pack(fill="both", expand=True)
@@ -244,7 +313,13 @@ class MaterialPage(tk.Frame):
         self.header_frame.config(bg=c["bg"])
         self.content_frame.config(bg=c["bg"])
         self.title_lbl.config(bg=c["bg"], fg=c["fg"])
-        self.material_list.config(bg=c["input_bg"], fg=c["fg"])
+        self.floor_frame.config(bg=c["bg"])
+        self.wall_frame.config(bg=c["bg"])
+        self.btn_frame.config(bg=c["bg"])
+        self.lbl_floor.config(bg=c["bg"], fg=c["fg"])
+        self.lbl_wall.config(bg=c["bg"], fg=c["fg"])
+        self.floor_list.config(bg=c["input_bg"], fg=c["fg"])
+        self.wall_list.config(bg=c["input_bg"], fg=c["fg"])
 
 
 # --- PAGE 4: CALCULATOR (COMPOSITE 3D ROOM) ---
@@ -256,78 +331,119 @@ class CalculatorPage(tk.Frame):
         self.final_room_image = None
         self.last_results = None
 
-        top_bar = tk.Frame(self, height=40)
-        top_bar.pack(fill="x", side="top")
-        self.top_bar = top_bar
+        # --- HEADER ---
+        self.top_bar = tk.Frame(self)
+        self.top_bar.pack(fill="x", side="top", padx=10, pady=10)
 
-        tk.Button(top_bar, text="< Back to Menu",
-                  command=lambda: controller.show_frame("DashboardPage")).pack(side="left", padx=10, pady=5)
+        self.logo_img = None
+        try:
+            load = Image.open("images/logo.png")
+            # SIZE SET TO 50
+            load = load.resize((50, 50), Image.Resampling.LANCZOS)
+            self.logo_img = ImageTk.PhotoImage(load)
+            tk.Label(self.top_bar, image=self.logo_img).pack(side="left", padx=(0, 10))
+        except:
+            pass
 
-        self.left_pane = tk.Frame(self, padx=20, pady=20)
-        self.left_pane.pack(side="left", fill="both", expand=True)
+        tk.Label(self.top_bar, text="Consultation", font=("Arial", 20, "bold")).pack(side="left")
+
+        tk.Button(self.top_bar, text="Back to Menu",
+                  command=lambda: controller.show_frame("DashboardPage")).pack(side="right")
+
+        self.left_pane = tk.Frame(self, padx=15, pady=15)
+        self.left_pane.place(relx=0, rely=0.1, relwidth=0.4, relheight=0.9)
 
         self.right_pane = tk.Frame(self, padx=20, pady=20)
-        self.right_pane.pack(side="right", fill="both", expand=True)
+        self.right_pane.place(relx=0.4, rely=0.1, relwidth=0.6, relheight=0.9)
 
         self.labels = []
         self.setup_inputs(self.left_pane)
         self.setup_outputs(self.right_pane)
 
     def setup_inputs(self, parent):
-        def create_lbl(text):
-            lbl = tk.Label(parent, text=text, font=("Arial", 10, "bold"), anchor="w")
-            lbl.pack(fill="x", pady=(10, 0))
+        input_container = tk.Frame(parent)
+        input_container.pack(fill="both", expand=True)
+        self.input_container = input_container
+
+        col1 = tk.Frame(input_container)
+        col1.pack(side="left", fill="both", expand=True, padx=(0, 5))
+        self.col1 = col1
+
+        col2 = tk.Frame(input_container)
+        col2.pack(side="right", fill="both", expand=True, padx=(5, 0))
+        self.col2 = col2
+
+        def create_lbl(container, text):
+            lbl = tk.Label(container, text=text, font=("Arial", 9, "bold"), anchor="w")
+            lbl.pack(fill="x", pady=(5, 0))
             self.labels.append(lbl)
             return lbl
 
-        create_lbl("Room Type:")
+        # --- COL 1: MATERIALS ---
+        create_lbl(col1, "Room Type:")
         self.room_var = tk.StringVar(value="Living Room")
-        ttk.Combobox(parent, textvariable=self.room_var,
-                     values=["Living Room", "Bedroom", "Kitchen", "Bathroom"]).pack(fill="x", ipady=5)
+        ttk.Combobox(col1, textvariable=self.room_var,
+                     values=["Living Room", "Bedroom", "Kitchen", "Bathroom"]).pack(fill="x", ipady=3)
 
-        create_lbl("Flooring Material:")
+        create_lbl(col1, "Flooring:")
         self.floor_var = tk.StringVar()
-        self.floor_combo = ttk.Combobox(parent, textvariable=self.floor_var,
+        self.floor_combo = ttk.Combobox(col1, textvariable=self.floor_var,
                                         values=list(df[df['Type'] == 'Floor']['Material']))
-        self.floor_combo.pack(fill="x", ipady=5)
+        self.floor_combo.pack(fill="x", ipady=3)
         self.floor_combo.bind("<<ComboboxSelected>>", self.update_tile_choices)
 
-        create_lbl("Wall Finish:")
+        create_lbl(col1, "Wall Finish:")
         self.wall_var = tk.StringVar()
-        ttk.Combobox(parent, textvariable=self.wall_var,
-                     values=list(df[df['Type'] == 'Wall']['Material'])).pack(fill="x", ipady=5)
+        ttk.Combobox(col1, textvariable=self.wall_var,
+                     values=list(df[df['Type'] == 'Wall']['Material'])).pack(fill="x", ipady=3)
 
-        create_lbl("Room Width (meters):")
-        self.width_entry = tk.Entry(parent)
-        self.width_entry.pack(fill="x", ipady=5)
-
-        create_lbl("Room Length (meters):")
-        self.length_entry = tk.Entry(parent)
-        self.length_entry.pack(fill="x", ipady=5)
-
-        create_lbl("Ceiling Height (meters):")
-        self.height_var = tk.StringVar(value="3.0")
-        tk.Spinbox(parent, from_=2.0, to=10.0, increment=0.1,
-                   textvariable=self.height_var).pack(fill="x", ipady=5)
-
-        create_lbl("Tile Size (cm):")
+        create_lbl(col1, "Tile Size (cm):")
         self.tile_var = tk.StringVar()
-        self.tile_combo = ttk.Combobox(parent, textvariable=self.tile_var, values=["30x30 cm", "60x60 cm"])
-        self.tile_combo.pack(fill="x", ipady=5)
+        self.tile_combo = ttk.Combobox(col1, textvariable=self.tile_var, values=["30x30 cm", "60x60 cm"])
+        self.tile_combo.pack(fill="x", ipady=3)
         self.tile_combo.current(0)
 
-        create_lbl("Max Budget (RM):")
-        self.budget_entry = tk.Entry(parent)
-        self.budget_entry.pack(fill="x", ipady=5)
+        # --- COL 2: DIMENSIONS (UPDATED GROUPING) ---
 
-        tk.Button(parent, text="CALCULATE PLAN", bg="blue", fg="white",
-                  font=("Arial", 12, "bold"), command=self.run_calc).pack(fill="x", pady=(20, 5), ipady=5)
+        # Header: FLOOR
+        tk.Label(col2, text="--- FLOOR SIZE ---", font=("Arial", 9, "bold", "italic"), fg="grey").pack(fill="x",
+                                                                                                      pady=(10, 2))
 
-        # UPDATED: Print Button is here, initially disabled
-        self.btn_print = tk.Button(parent, text="PRINT INVOICE", bg="grey", fg="white",
-                                   font=("Arial", 12, "bold"), state="disabled",
+        create_lbl(col2, "Floor Width (m):")
+        self.width_entry = tk.Entry(col2)
+        self.width_entry.pack(fill="x", ipady=3)
+
+        create_lbl(col2, "Floor Length (m):")
+        self.length_entry = tk.Entry(col2)
+        self.length_entry.pack(fill="x", ipady=3)
+
+        # Header: WALL
+        tk.Label(col2, text="--- WALL SIZE ---", font=("Arial", 9, "bold", "italic"), fg="grey").pack(fill="x",
+                                                                                                      pady=(10, 2))
+
+        create_lbl(col2, "Wall Height (m):")
+        self.height_entry = tk.Entry(col2)
+        self.height_entry.pack(fill="x", ipady=3)
+        self.height_entry.insert(0, "3.0")
+
+        # Header: BUDGET
+        tk.Label(col2, text="--- FINANCIAL ---", font=("Arial", 9, "bold", "italic"), fg="grey").pack(fill="x",
+                                                                                                      pady=(10, 2))
+        create_lbl(col2, "Budget (RM):")
+        self.budget_entry = tk.Entry(col2)
+        self.budget_entry.pack(fill="x", ipady=3)
+
+        # --- BOTTOM BUTTONS ---
+        self.btn_frame = tk.Frame(parent)
+        self.btn_frame.pack(fill="x", pady=20, side="bottom")
+
+        tk.Button(self.btn_frame, text="CALCULATE PLAN", bg="blue", fg="white",
+                  font=("Arial", 11, "bold"), command=self.run_calc).pack(fill="x", pady=5, ipady=3)
+
+        self.btn_print = tk.Button(self.btn_frame, text="PRINT INVOICE", bg="grey", fg="white",
+                                   font=("Arial", 11, "bold"), state="disabled",
                                    command=self.save_receipt)
-        self.btn_print.pack(fill="x", pady=5, ipady=5)
+        self.btn_print.pack(fill="x", pady=5, ipady=3)
 
     def update_tile_choices(self, event):
         selection = self.floor_var.get()
@@ -360,18 +476,25 @@ class CalculatorPage(tk.Frame):
         self.left_pane.config(bg=c["frame_bg"])
         self.right_pane.config(bg=c["bg"])
 
+        self.input_container.config(bg=c["frame_bg"])
+        self.col1.config(bg=c["frame_bg"])
+        self.col2.config(bg=c["frame_bg"])
+        self.btn_frame.config(bg=c["frame_bg"])
+
         for lbl in self.labels:
             try:
-                lbl.config(bg=c["frame_bg"] if lbl.master == self.left_pane else c["bg"], fg=c["fg"])
+                lbl.config(bg=c["frame_bg"] if lbl.master in [self.left_pane, self.col1, self.col2] else c["bg"],
+                           fg=c["fg"])
             except tk.TclError:
                 pass
 
-        for widget in self.left_pane.winfo_children():
-            try:
-                if isinstance(widget, tk.Entry) or isinstance(widget, tk.Spinbox):
-                    widget.config(bg=c["input_bg"], fg=c["fg"], insertbackground=c["fg"])
-            except tk.TclError:
-                pass
+        for parent_frame in [self.col1, self.col2]:
+            for widget in parent_frame.winfo_children():
+                try:
+                    if isinstance(widget, tk.Entry) or isinstance(widget, tk.Spinbox):
+                        widget.config(bg=c["input_bg"], fg=c["fg"], insertbackground=c["fg"])
+                except tk.TclError:
+                    pass
 
         self.lbl_cost.config(bg=c["bg"])
         self.lbl_budget_feedback.config(bg=c["bg"])
@@ -387,8 +510,14 @@ class CalculatorPage(tk.Frame):
         try:
             w = float(self.width_entry.get())
             l = float(self.length_entry.get())
-            h = float(self.height_var.get())
+            h = float(self.height_entry.get())
             b = float(self.budget_entry.get())
+
+            # --- FIXED: Negative Number Check ---
+            if w <= 0 or l <= 0 or h <= 0 or b < 0:
+                messagebox.showerror("Input Error", "Dimensions must be greater than 0.\nBudget cannot be negative.")
+                return
+
         except Exception:
             messagebox.showerror("Error", "Please check your numbers.")
             return
@@ -396,18 +525,17 @@ class CalculatorPage(tk.Frame):
         self.last_results = RenovationLogic.calculate_project(w, l, h, f_mat, self.wall_var.get(), self.tile_var.get())
 
         self.lbl_cost.config(text=f"Total Estimate: RM {self.last_results['total_cost']:.2f}")
-
-        # UPDATED: Enable the Print Button
-        self.btn_print.config(state="normal", bg="#4CAF50")  # Turn Green
+        self.btn_print.config(state="normal", bg="#4CAF50")
 
         try:
             CANVAS_W, CANVAS_H = 400, 250
-            wall_img = Image.open(self.last_results['wall_image']).resize((CANVAS_W, CANVAS_H),
-                                                                          Image.Resampling.LANCZOS)
+            # UPDATED KEYS (Kerqin style)
+            wall_img = Image.open(self.last_results['wall_img']).resize((CANVAS_W, CANVAS_H),
+                                                                        Image.Resampling.LANCZOS)
             final_img = wall_img.copy()
 
-            floor_tex = Image.open(self.last_results['floor_image']).resize((CANVAS_W, CANVAS_H),
-                                                                            Image.Resampling.LANCZOS)
+            floor_tex = Image.open(self.last_results['floor_img']).resize((CANVAS_W, CANVAS_H),
+                                                                          Image.Resampling.LANCZOS)
 
             floor_mask = Image.new("L", (CANVAS_W, CANVAS_H), 0)
             draw_floor = ImageDraw.Draw(floor_mask)
@@ -464,7 +592,7 @@ class CalculatorPage(tk.Frame):
 
         win = tk.Toplevel(self)
         win.title("Service Selection")
-        win.geometry("400x300")
+        self.controller.center_popup(win, 400, 300)
 
         tk.Label(win, text="Select Service Option:", font=("Arial", 14, "bold")).pack(pady=20)
 
@@ -498,6 +626,7 @@ class CalculatorPage(tk.Frame):
         line = "=" * 60
         thin_line = "-" * 60
 
+        # UPDATED KEYS (Kerqin style)
         text_content = f"""
 {ascii_header}
 
@@ -511,7 +640,7 @@ Client Order: #RV-{int(datetime.now().timestamp())}
 PROJECT SPECIFICATIONS:
   Room Type:      {self.room_var.get()}
   Dimensions:     {self.width_entry.get()}m x {self.length_entry.get()}m
-  Ceiling Height: {self.height_var.get()}m
+  Ceiling Height: {self.height_entry.get()}m
   Tile Size:      {self.tile_var.get()}
 
 {thin_line}
@@ -519,8 +648,8 @@ ITEMIZED BREAKDOWN
 {thin_line}
 {'ITEM':<25} | {'QTY':<10} | {'UNIT PRICE':<10} | {'TOTAL':>10}
 {thin_line}
-FLOORING: {self.floor_var.get():<15} | {res['floor_area']:<6.1f} sqm | RM {res['floor_price_unit']:<7.2f} | RM {res['floor_cost']:>7.2f}
-WALL: {self.wall_var.get():<19} | {res['wall_area']:<6.1f} sqm | RM {res['wall_price_unit']:<7.2f} | RM {res['wall_cost']:>7.2f}
+FLOORING: {self.floor_var.get():<15} | {res['floor_area']:<6.1f} sqm | RM {res['floor_price']:<7.2f} | RM {res['floor_cost']:>7.2f}
+WALL: {self.wall_var.get():<19} | {res['wall_area']:<6.1f} sqm | RM {res['wall_price']:<7.2f} | RM {res['wall_cost']:>7.2f}
 {thin_line}
 Subtotal (Materials):                               RM {res['total_cost']:>7.2f}
 Service ({service_name}):                           RM {service_fee:>7.2f}

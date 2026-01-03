@@ -1,7 +1,6 @@
 import pandas as pd
 
 # --- CONSTANTS FOR FEES ---
-# You can change these prices to whatever you want
 DELIVERY_FLAT_RATE = 85.00
 INSTALLATION_FLAT_RATE = 450.00  # Includes labor and tools
 
@@ -27,10 +26,7 @@ def load_data():
             True, True, False, True, True,
             False, False, True
         ],
-        "Hex_Color": [
-            "#8B4513", "#F0F0F0", "#5C4033", "#D2B48C", "#FFFFFF",
-            "#FFF8DC", "#FFD700", "#A9A9A9"
-        ],
+        # Removed Hex_Color (Dead Data)
         "Image_File": [
             "images/vinyl.jpg",
             "images/marble.jpg",
@@ -98,14 +94,14 @@ class RenovationLogic:
         return {
             "tiles_needed": tiles_needed,
             "wall_area": wall_area,
-            "floor_area": area_sqm,  # Added this for the receipt
-            "floor_price_unit": f_price,
-            "wall_price_unit": w_price,
+            "floor_area": area_sqm,
+            # Ker Qin's Variable Names:
+            "floor_price": f_price,
+            "wall_price": w_price,
             "total_cost": total_cost,
-            "floor_cost": floor_cost,  # Added for detailed breakdown
-            "wall_cost": wall_cost,  # Added for detailed breakdown
-            "floor_color": f_row['Hex_Color'],
-            "wall_color": w_row['Hex_Color'],
-            "floor_image": f_row['Image_File'],
-            "wall_image": w_row['Image_File']
+            "floor_cost": floor_cost,
+            "wall_cost": wall_cost,
+            # Removed floor_color/wall_color (Dead Logic)
+            "floor_img": f_row['Image_File'],
+            "wall_img": w_row['Image_File']
         }
