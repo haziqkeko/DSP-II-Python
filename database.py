@@ -1,13 +1,10 @@
 import pandas as pd
 
-# --- CONSTANTS FOR FEES ---
+# [HAZIQ] CONSTANTS FOR FEES
 DELIVERY_FLAT_RATE = 85.00
-INSTALLATION_FLAT_RATE = 450.00  # Includes labor and tools
+INSTALLATION_FLAT_RATE = 450.00
 
-
-# ==========================================
-# PART 1: THE DATABASE (Model)
-# ==========================================
+# [KER QIN] MATERIAL DATAFRAME
 def load_data():
     data = {
         "Material": [
@@ -26,7 +23,6 @@ def load_data():
             True, True, False, True, True,
             False, False, True
         ],
-        # Removed Hex_Color (Dead Data)
         "Image_File": [
             "images/vinyl.jpg",
             "images/marble.jpg",
@@ -39,14 +35,9 @@ def load_data():
         ]
     }
     return pd.DataFrame(data)
-
-
 df = load_data()
 
-
-# ==========================================
-# PART 2: THE LOGIC (Controller)
-# ==========================================
+# [HAZIQ]
 class RenovationLogic:
     @staticmethod
     def check_safety(room_type, floor_mat):
@@ -64,30 +55,36 @@ class RenovationLogic:
 
     @staticmethod
     def calculate_project(width, length, height, floor_mat, wall_mat, tile_size_str):
-        # 1. Geometry (Meters)
+        # ROOM CALCULATIONS
         area_sqm = width * length
         perimeter = 2 * (width + length)
-
-        # Wall Area = Perimeter * Height
         wall_area = perimeter * height
 
-        # 2. Get Prices
+        # RETRIEVE PRICES
         f_row = df[df['Material'] == floor_mat].iloc[0]
         w_row = df[df['Material'] == wall_mat].iloc[0]
 
         f_price = f_row['Price_Per_Sqm']
         w_price = w_row['Price_Per_Sqm']
 
-        # 3. Tile Math
+        # [AIMAN] WASTAGE LOGIC FOR TILE SIZE
+        tile_wastage = {
+            "30x30 cm": 1.05,
+            "60x60 cm": 1.08,
+            "15x90 cm": 1.12
+        }
+        wastage_factor = tile_wastage.get(tile_size_str, 1.05)
+
+        # [HAZIQ] TILE CALCULATION
         try:
             dims = tile_size_str.lower().replace(' cm', '').split('x')
             one_tile_area_sqm = (int(dims[0]) / 100) * (int(dims[1]) / 100)
         except:
             one_tile_area_sqm = 0.09
 
-        tiles_needed = int((area_sqm / one_tile_area_sqm) * 1.10)
-
-        floor_cost = area_sqm * f_price
+        # [AIMAN] ADD WASTAGE FACTOR TO CALCULATION
+        tiles_needed = int((area_sqm / one_tile_area_sqm) * wastage_factor)
+        floor_cost = area_sqm * f_price * wastage_factor
         wall_cost = wall_area * w_price
         total_cost = floor_cost + wall_cost
 
@@ -95,13 +92,11 @@ class RenovationLogic:
             "tiles_needed": tiles_needed,
             "wall_area": wall_area,
             "floor_area": area_sqm,
-            # Ker Qin's Variable Names:
             "floor_price": f_price,
             "wall_price": w_price,
             "total_cost": total_cost,
             "floor_cost": floor_cost,
             "wall_cost": wall_cost,
-            # Removed floor_color/wall_color (Dead Logic)
             "floor_img": f_row['Image_File'],
             "wall_img": w_row['Image_File']
         }
