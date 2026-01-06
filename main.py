@@ -1,4 +1,3 @@
-# FILE: main.py
 from gui import RenovationApp
 
 if __name__ == "__main__":

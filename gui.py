@@ -12,6 +12,7 @@ class RenovationApp(tk.Tk):
         self.title("RENOVISION: Smart Interior Assistant")
         self.geometry("1100x800")
 
+        # THEME CONFIGURATION
         self.current_mode = "light"
         self.dark_mode_var = tk.BooleanVar(value=False)
         self.colors = {
@@ -50,7 +51,7 @@ class RenovationApp(tk.Tk):
         self.show_frame("HomePage")
         self.apply_theme()
 
-    # [HAZIQ] CENTERING POPUPS
+    # [HAZIQ] UTILITY FOR CENTERING POPUPS
     def center_popup(self, popup, width, height):
         self.update_idletasks()
         main_x = self.winfo_x()
@@ -136,7 +137,7 @@ class HomePage(tk.Frame):
         self.sub_lbl.config(bg=c["bg"], fg="grey" if self.controller.current_mode == "light" else "#aaaaaa")
 
 
-# [AMANINA] DASHBOARD
+# [AMANINA] DASHBOARD AND ORANGE THEME
 class DashboardPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -168,7 +169,7 @@ class DashboardPage(tk.Frame):
             btn.pack(pady=10)
             return btn
 
-        # [AMANINA] ORANGE THEME
+        # [AMANINA] ORANGE THEME #FFA94D
         make_btn("HOME PAGE", lambda: controller.show_frame("HomePage"), "#FFA94D")
         make_btn("MATERIAL MENU", lambda: controller.show_frame("MaterialPage"), "#FFA94D")
         make_btn("CONSULTATION", lambda: controller.show_frame("CalculatorPage"), "#FFA94D")
@@ -182,7 +183,7 @@ class DashboardPage(tk.Frame):
             lbl.config(bg=c["bg"], fg=c["fg"])
 
 
-# [KER QIN] MATERIAL CATALOG PAGE
+# [KER QIN] MATERIAL CATALOG PAGE (WITH LABELFRAME)
 class MaterialPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -207,23 +208,26 @@ class MaterialPage(tk.Frame):
         self.content_frame = tk.Frame(self)
         self.content_frame.pack(fill="both", expand=True, padx=40, pady=10)
 
-        # [KER QIN] SPLIT LAYOUT (FLOOR VS WALL)
-        self.floor_frame = tk.Frame(self.content_frame)
+        # [KER QIN] SPLIT LAYOUT USING LABELFRAME
+
+        # FLOORS
+        self.floor_frame = tk.LabelFrame(self.content_frame, text="Flooring Options", font=("Arial", 14, "bold"))
         self.floor_frame.pack(side="left", fill="both", expand=True, padx=10)
-        self.lbl_floor = tk.Label(self.floor_frame, text="Flooring Options", font=("Arial", 14, "bold"))
-        self.lbl_floor.pack(anchor="w", pady=5)
+
         self.floor_list = tk.Listbox(self.floor_frame, font=("Arial", 12), height=15, exportselection=False)
-        self.floor_list.pack(side="left", fill="both", expand=True)
+        self.floor_list.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+
         floor_scroll = tk.Scrollbar(self.floor_frame, command=self.floor_list.yview)
         floor_scroll.pack(side="left", fill="y")
         self.floor_list.config(yscrollcommand=floor_scroll.set)
 
-        self.wall_frame = tk.Frame(self.content_frame)
+        # WALLS
+        self.wall_frame = tk.LabelFrame(self.content_frame, text="Wall Finishes", font=("Arial", 14, "bold"))
         self.wall_frame.pack(side="right", fill="both", expand=True, padx=10)
-        self.lbl_wall = tk.Label(self.wall_frame, text="Wall Finishes", font=("Arial", 14, "bold"))
-        self.lbl_wall.pack(anchor="w", pady=5)
+
         self.wall_list = tk.Listbox(self.wall_frame, font=("Arial", 12), height=15, exportselection=False)
-        self.wall_list.pack(side="left", fill="both", expand=True)
+        self.wall_list.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+
         wall_scroll = tk.Scrollbar(self.wall_frame, command=self.wall_list.yview)
         wall_scroll.pack(side="left", fill="y")
         self.wall_list.config(yscrollcommand=wall_scroll.set)
@@ -295,11 +299,11 @@ class MaterialPage(tk.Frame):
         self.header_frame.config(bg=c["bg"])
         self.content_frame.config(bg=c["bg"])
         self.title_lbl.config(bg=c["bg"], fg=c["fg"])
-        self.floor_frame.config(bg=c["bg"])
-        self.wall_frame.config(bg=c["bg"])
+        # Update LabelFrames
+        self.floor_frame.config(bg=c["bg"], fg=c["fg"])
+        self.wall_frame.config(bg=c["bg"], fg=c["fg"])
         self.btn_frame.config(bg=c["bg"])
-        self.lbl_floor.config(bg=c["bg"], fg=c["fg"])
-        self.lbl_wall.config(bg=c["bg"], fg=c["fg"])
+        # Removed individual label updates since they are now part of LabelFrame
         self.floor_list.config(bg=c["input_bg"], fg=c["fg"])
         self.wall_list.config(bg=c["input_bg"], fg=c["fg"])
 
@@ -394,6 +398,7 @@ class CalculatorPage(tk.Frame):
         self.budget_entry = tk.Entry(col2)
         self.budget_entry.pack(fill="x", ipady=3)
 
+        # [AIMAN] INPUT CONTROL: CHECKBOX TOGGLE
         self.is_member = tk.BooleanVar()
         tk.Checkbutton(col2, text="Member Discount (5%)", variable=self.is_member,
                        font=("Arial", 9, "bold")).pack(fill="x", pady=(10, 0))
@@ -493,7 +498,7 @@ class CalculatorPage(tk.Frame):
 
         try:
             CANVAS_W, CANVAS_H = 400, 250
-            # [KER QIN] FAUX 3D RENDER OF ROOM
+            # [KER QIN] IMAGE COMPOSITING WITH NEW KEYS
             wall_img = Image.open(self.last_results['wall_img']).resize((CANVAS_W, CANVAS_H), Image.Resampling.LANCZOS)
             final_img = wall_img.copy()
             floor_tex = Image.open(self.last_results['floor_img']).resize((CANVAS_W, CANVAS_H),
@@ -573,7 +578,6 @@ class CalculatorPage(tk.Frame):
         line = "=" * 60
         thin_line = "-" * 60
 
-        # [NEW] Logic to show discount if applied
         discount_text = ""
         if res.get('discount', 0) > 0:
             discount_text = f"Member Discount (5%):                           -RM {res['discount']:>7.2f}\n{thin_line}"
